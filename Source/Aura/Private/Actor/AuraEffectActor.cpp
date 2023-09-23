@@ -19,7 +19,6 @@ void AAuraEffectActor::BeginPlay()
 
 void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGameplayEffect> GameplayEffectClass, bool InfiniteAndStore)
 {
-	
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
 	if(TargetASC == nullptr) return;
 
@@ -41,6 +40,7 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 
 void AAuraEffectActor::OnOverlap(AActor* TargetActor)
 {
+	if (!TargetMatchesPolicy(TargetActor)) return;
 
 	if(!InstantGameplayEffects.IsEmpty())
 	for(const auto [GameplayEffectClass, EffectApplicationPolicy] : InstantGameplayEffects)
@@ -74,6 +74,8 @@ void AAuraEffectActor::OnOverlap(AActor* TargetActor)
 
 void AAuraEffectActor::OnEndOverlap(AActor* TargetActor)
 {
+	if (!TargetMatchesPolicy(TargetActor)) return;
+	
 	if(!InstantGameplayEffects.IsEmpty())
 	for(const auto [GameplayEffectClass, EffectApplicationPolicy] : InstantGameplayEffects)
 	{
@@ -118,3 +120,12 @@ void AAuraEffectActor::OnEndOverlap(AActor* TargetActor)
 	if(ActorDestroyPolicy == EActorDestroyPolicy::DestroyAfterEndOverlap) Destroy();
 }
 
+bool AAuraEffectActor::TargetMatchesPolicy(const AActor* TargetActor) const
+{
+	// This would technically be wrong if an actor had both the "Player" and "Enemy" tags
+	// It will assumed that this will not happen
+	if(TargetTypePolicy == ETargetTypePolicy::EnemiesOnly && !TargetActor->ActorHasTag(FName("Enemy"))) return false;
+	if(TargetTypePolicy == ETargetTypePolicy::PlayersOnly && !TargetActor->ActorHasTag(FName("Player"))) return false;
+
+	return true;
+}

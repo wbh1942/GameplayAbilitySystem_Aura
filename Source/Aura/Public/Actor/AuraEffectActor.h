@@ -33,6 +33,14 @@ enum class EEffectRemovalPolicy
 	DoNotRemove
 };
 
+UENUM(BlueprintType)
+enum class ETargetTypePolicy
+{
+	AllTargets,
+	PlayersOnly,
+	EnemiesOnly
+};
+
 USTRUCT(BlueprintType)
 struct FInstantGameplayEffectWrapper
 {
@@ -88,6 +96,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void OnOverlap(AActor* TargetActor);
+	bool TargetMatchesPolicy(const AActor* TargetActor) const;
 
 	UFUNCTION(BlueprintCallable)
 	void OnEndOverlap(AActor* TargetActor);
@@ -114,4 +123,14 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Applied Effects")
 	float ActorLevel = 1.f;
+
+
+	/*
+	 * If eventually more tags than "Player" and "Enemy" ->
+	 * There could be a bool for bALlTargets ->
+	 * if bAllTargets is false -> allow user to add
+	 * acceptable FName tags to an array
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Applied Effects")
+	ETargetTypePolicy TargetTypePolicy = ETargetTypePolicy::AllTargets;
 };

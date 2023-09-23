@@ -6,6 +6,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "AbilitySystem/AuraAbilitySystemLibrary.h"
 #include "Aura/Aura.h"
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
@@ -55,7 +56,7 @@ void AAuraProjectile::Destroyed()
 void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (DamageEffectSpecHandle.Data.IsValid() && DamageEffectSpecHandle.Data.Get()->GetContext().GetEffectCauser() == OtherActor) return;
+	if (DamageEffectSpecHandle.Data.IsValid() && DamageEffectSpecHandle.Data.Get()->GetContext().GetInstigator() == OtherActor) return;
 
 	if(!bHit)
 	{
@@ -63,13 +64,22 @@ void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ImpactEffect, GetActorLocation());
 		if(LoopingSoundComponent) LoopingSoundComponent->Stop();
 	}
+
+	if (!UAuraAbilitySystemLibrary::IsNotFriend(Cast<AActor>(DamageEffectSpecHandle.Data->GetContext().GetInstigator()), OtherActor))
+	{
+		return;
+	}
 	
 	if (HasAuthority())
 	{
-		if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
+		//UE_LOG(LogTemp, Warning, TEXT("EffectCauser: %s, Instigator: %s"), *DamageEffectSpecHandle.Data->GetContext().GetEffectCauser()->GetName(), *DamageEffectSpecHandle.Data->GetContext().GetInstigator()->GetName())
+		
+		if(UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
 		{
+			
 			TargetASC->ApplyGameplayEffectSpecToSelf(*DamageEffectSpecHandle.Data.Get());
 		}
+
 		Destroy();
 	}
 	else
