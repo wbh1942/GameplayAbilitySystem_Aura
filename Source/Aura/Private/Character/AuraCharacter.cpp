@@ -20,6 +20,15 @@ AAuraCharacter::AAuraCharacter()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = false;
+
+	CharacterClass = ECharacterClass::Elementalist;
+}
+
+void AAuraCharacter::AddToXP_Implementation(const int32 InXP)
+{
+	AAuraPlayerState* AuraPlayerState = GetPlayerState<AAuraPlayerState>();
+	check(AuraPlayerState);
+	AuraPlayerState->AddXP(InXP);
 }
 
 void AAuraCharacter::InitAbilityActorInfo()

@@ -49,6 +49,7 @@ void AAuraProjectile::Destroyed()
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation(), FRotator::ZeroRotator);
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ImpactEffect, GetActorLocation());
 		if(LoopingSoundComponent) LoopingSoundComponent->Stop();
+		bHit = true;
 	}
 	Super::Destroyed();
 }
@@ -56,13 +57,9 @@ void AAuraProjectile::Destroyed()
 void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (DamageEffectSpecHandle.Data.IsValid() && DamageEffectSpecHandle.Data.Get()->GetContext().GetInstigator() == OtherActor) return;
-
-	if(!bHit)
+	if (!DamageEffectSpecHandle.Data.IsValid() || DamageEffectSpecHandle.Data.Get()->GetContext().GetInstigator() == OtherActor)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation(), FRotator::ZeroRotator);
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ImpactEffect, GetActorLocation());
-		if(LoopingSoundComponent) LoopingSoundComponent->Stop();
+		return;
 	}
 
 	if (!UAuraAbilitySystemLibrary::IsNotFriend(Cast<AActor>(DamageEffectSpecHandle.Data->GetContext().GetInstigator()), OtherActor))
@@ -70,9 +67,20 @@ void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 		return;
 	}
 	
+	if(!bHit)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation(), FRotator::ZeroRotator);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ImpactEffect, GetActorLocation());
+		if(LoopingSoundComponent) LoopingSoundComponent->Stop();
+		bHit = true;
+	}
+	
 	if (HasAuthority())
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("EffectCauser: %s, Instigator: %s"), *DamageEffectSpecHandle.Data->GetContext().GetEffectCauser()->GetName(), *DamageEffectSpecHandle.Data->GetContext().GetInstigator()->GetName())
+		UE_LOG(LogTemp, Warning, TEXT("EffectCauser: %s, Instigator: %s, OtherActor: %s"),
+			*DamageEffectSpecHandle.Data->GetContext().GetEffectCauser()->GetName(),
+			*DamageEffectSpecHandle.Data->GetContext().GetInstigator()->GetName(),
+			*OtherActor->GetName());
 		
 		if(UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
 		{
